@@ -1,0 +1,17 @@
+{
+    "name": "game-test",
+    "version": "0.0.0",
+    "description": "",
+    "author": "Giovanni Canales",
+    "type": "module",
+    "main": "server.js",
+    "dependencies": {
+        "chalk": "^5.3.0",
+        "express": "^4.18.2",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "socket.io": "^4.7.4",
+        "sqlite": "^5.1.1",
+        "sqlite3": "^5.1.7"
+    }
+}
