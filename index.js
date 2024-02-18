@@ -127,9 +127,12 @@ class App {
     } 
 
     renderGamePage() {
+        const teamWin = $('<p>');
+
         const liberalPolicies = $('<p>');
         const fascistPolicies = $('<p>');
         const round = $('<p>');
+        const electionTracker = $('<p>');
         
         const drawSize = $('<p>');
         const discardSize = $('<p>');
@@ -170,6 +173,8 @@ class App {
             socket.emit("voteChancellor", vote == "ja!");
         }
 
+        const choosePolicies = $('<div>');
+
         const updatePolicyCount = () => {
             const passedLiberalPolicies = this.gameState.board.numLiberalPolicies;
             const liberalPoliciesToWin = this.gameState.board.LIBERAL_POLICIES_TO_WIN;
@@ -185,6 +190,10 @@ class App {
 
         const updateRound = () => {
             round.text(`Round: ${this.gameState.round}`);
+        }
+
+        const updateElectionTracker = () => {
+            electionTracker.text(`Election Tracker: ${this.gameState.electionTracker} | 3 consecutive failed chancellor votes automatically enacts a policy`);
         }
 
         const updateDeck = () => {
@@ -211,12 +220,7 @@ class App {
         }
 
         const showOtherFascists = () => {
-            // console.log("Show other Fascists")
             for (const player of this.gameState.players) {
-                // console.log(player);
-                // console.log(player.identity);
-                // console.log(player.username);
-                // console.log(player.username == this.state.userName);
                 if (player.username == this.state.userName) {
                     if (player.identity == "LIBERAL") {
                         return;
@@ -224,12 +228,7 @@ class App {
                 }
             }
 
-            // console.log("I am Fascist so let's see the others")
             for (const player of this.gameState.players) {
-                // console.log(player);
-                // console.log(player.identity);
-                // console.log(player.username);
-                // console.log(player.username == this.state.userName);
                 if (player.identity != "LIBERAL" && player.username != this.state.userName) {
                     const idLine = $('<p>').text(`${player.username} is ${player.identity}`);
                     otherFascists.append(idLine);
@@ -255,23 +254,75 @@ class App {
             voteYes.prop('disabled', !(this.gameState.state == "CHANCELLOR_VOTING") || this.gameState.voteMap.has(this.state.userName))
             voteNo.prop('disabled', !(this.gameState.state == "CHANCELLOR_VOTING") || this.gameState.voteMap.has(this.state.userName))
         }
+        
+        const updateChoosePolicies = () => {
+            choosePolicies.empty();
+            if (this.gameState.state == "LEGISLATIVE_PRESIDENT" && this.state.userName == this.gameState.currPresident) {
+                const policyOne = $('<button>').text(this.gameState.legislativePolicies[0]);
+                const policyTwo = $('<button>').text(this.gameState.legislativePolicies[1]);
+                const policyThree = $('<button>').text(this.gameState.legislativePolicies[2]);
+
+                choosePolicies.append(policyOne);
+                choosePolicies.append(policyTwo);
+                choosePolicies.append(policyThree);
+
+                const discardPolicy = (event) => {
+                    const index = this.gameState.legislativePolicies.indexOf($(event.target).text());
+                    console.log(`Discarded ${index}`);
+                    socket.emit('presidentDiscard', index);
+                }
+
+                policyOne.on('click', discardPolicy);
+                policyTwo.on('click', discardPolicy);
+                policyThree.on('click', discardPolicy);
+            } else if (this.gameState.state == "LEGISLATIVE_CHANCELLOR" && this.state.userName == this.gameState.currChancellor) {
+                const policyOne = $('<button>').text(this.gameState.legislativePolicies[0]);
+                const policyTwo = $('<button>').text(this.gameState.legislativePolicies[1]);
+
+                choosePolicies.append(policyOne);
+                choosePolicies.append(policyTwo);
+
+                const enactPolicy = (event) => {
+                    const index = this.gameState.legislativePolicies.indexOf($(event.target).text());
+                    console.log(`Enacted ${index}`);
+                    socket.emit('chancellorEnact', index);
+                }
+                
+                policyOne.on('click', enactPolicy);
+                policyTwo.on('click', enactPolicy);
+            } else if (this.gameState.state == "POST_LEGISLATIVE" && this.state.userName == this.gameState.currPresident) {
+                const endTurn = $('<button>').text(`End Term`);
+
+                choosePolicies.append(endTurn);
+
+                const endTurnButton = () => {
+                    console.log("Ending Presidential Term");
+                    socket.emit('endPresidentialTerm', )
+                }
+
+                endTurn.on('click', endTurnButton);
+            }
+        }
 
         const updateAll = () => {
-            console.log(this.gameState);
             updatePolicyCount();
             updateRound();
+            updateElectionTracker();
             updateDeck();
             updatePlayerList();
             udpateVote();
+            updateChoosePolicies();
         }
 
         playerList.find(".playerButton").on("click", clickPlayerButton);
         voteYes.on("click", clickVoteButton);
         voteNo.on("click", clickVoteButton);
         
+        $('#root').append(teamWin);
         $('#root').append(liberalPolicies);
         $('#root').append(fascistPolicies);
         $('#root').append(round);
+        $('#root').append(electionTracker);
         $('#root').append(drawSize);
         $('#root').append(discardSize);
         $('#root').append(playerIdentity);
@@ -280,6 +331,7 @@ class App {
         $('#root').append(playerList);
         $('#root').append(voteYes);
         $('#root').append(voteNo);
+        $('#root').append(choosePolicies);
 
         showPlayerIdentity();
         showOtherFascists();
@@ -307,18 +359,69 @@ class App {
                 case "CHANCELLOR_VOTING":
                     action.text(`Vote on chancellor`);
                     break;
+                case "LEGISLATIVE_PRESIDENT":
+                    if (this.state.userName == this.gameState.currPresident) {
+                        action.text(`Discard one policy. Your chancellor will decide between the other two.`);
+                    } else {
+                        action.text(``)
+                    }
+                    break;
+                case "LEGISLATIVE_CHANCELLOR":
+                    if (this.state.userName == this.gameState.currChancellor) {
+                        action.text(`Enact one policy. The other policy will be discarded.`);
+                    } else {
+                        action.text(``);
+                    }
+                    break;
+                case "POST_LEGISLATIVE":
+                    if (this.state.userName == this.gameState.currPresident) {
+                        action.text(`Waiting for you to end your presidential term...`);
+                    } else {
+                        action.text(``);
+                    }
+                    break;
                 default:
             }
         })
-        // console.log(this.gameState);
-        // console.log(this.gameState.players);
-        // console.log(this.gameState.board);
-        // console.log(this.gameState.draw); 
 
+        socket.on('gameOver', (gameData) => {
+            this.gameState = gameData;
+            this.gameState.voteMap = new Map(JSON.parse(this.gameState.voteMap))
+            console.log(this.gameState)
+            updateAll();
+            switch (this.gameState.state) {
+                case "LIBERAL_VICTORY_POLICY":
+                case "LIBERAL_VICTORY_EXECUTION":
+                    teamWin.text("Liberals have won");
+                    break;
+                case "FASCIST_VICTORY_POLICY":
+                case "FASCIST_VICTORY_ELECTION":
+                    teamWin.text("Fascists have won");
+                    break;
+                default:
+            }
+            const returnToLogin = $('<button>').text("To Login");
+            const returnToLobby = $('<button>').text("To Lobby");
+
+            $('#root').append(returnToLogin)
+            $('#root').append(returnToLobby)
+
+            returnToLogin.on('click', () => {
+                this.gameState = {};
+                socket.emit('returnToLogin', )
+            })
+
+            returnToLobby.on('click', () => {
+                this.gameState = {};
+                socket.emit('returnToLobby', )
+            })
+
+
+        })
     }
 
     render() {
-        $('#root').empty()
+        $('#root').empty();
         switch (this.state.page) {
             case PAGE.LOGIN:
                 this.renderLoginPage();
@@ -362,6 +465,7 @@ socket.on('leftGame', (data) => {
 socket.on('setupGame', (gameData) => {
     console.log('Setting Up Game');
     app.state.page = PAGE.GAME;
+
     app.gameState = gameData;
     app.gameState.voteMap = new Map();
 

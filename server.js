@@ -107,7 +107,7 @@ io.on('connect', (socket) => {
 
   socket.on('voteChancellor', (vote) => {
     console.log(`${socket.data.userName} is voting ${vote}`);
-    const lobby = lobbyManager.getLobby(socket.data.lobbyName)
+    const lobby = lobbyManager.getLobby(socket.data.lobbyName);
     lobby.game.registerVote(socket.data.userName, vote);
 
     const gameData = lobby.game.getGameData();
@@ -115,6 +115,63 @@ io.on('connect', (socket) => {
     console.log(gameData);
     io.to(socket.data.lobbyName).emit('continueGame', gameData);
   })
+
+  socket.on('presidentDiscard', (index) => {
+    console.log(`${socket.data.userName} discarding ${index}`);
+    const lobby = lobbyManager.getLobby(socket.data.lobbyName);
+    lobby.game.presidentDiscardPolicy(index);
+
+    const gameData = lobby.game.getGameData();
+    gameData.voteMap = JSON.stringify(Array.from(gameData.voteMap));
+    console.log(gameData);
+    io.to(socket.data.lobbyName).emit('continueGame', gameData);
+  })
+
+  socket.on('chancellorEnact', (index) => {
+    console.log(`${socket.data.userName} enacting ${index}`);
+    const lobby = lobbyManager.getLobby(socket.data.lobbyName);
+    lobby.game.chancellorEnactPolicy(index);
+
+    const gameData = lobby.game.getGameData();
+    gameData.voteMap = JSON.stringify(Array.from(gameData.voteMap));
+    console.log(gameData);
+    io.to(socket.data.lobbyName).emit('continueGame', gameData);
+  })
+
+  socket.on('endPresidentialTerm', () => {
+    console.log(`${socket.data.userName} ending presidential term`);
+    const lobby = lobbyManager.getLobby(socket.data.lobbyName);
+    lobby.game.endPresidentialTerm();
+    lobby.game.checkIfGameOver();
+
+    const isGameOver = lobby.game.hasGameFinished();
+
+    const gameData = lobby.game.getGameData();
+    gameData.voteMap = JSON.stringify(Array.from(gameData.voteMap));
+    console.log(gameData);
+
+    if (isGameOver) {
+      io.to(socket.data.lobbyName).emit('gameOver', gameData);
+    } else {
+      io.to(socket.data.lobbyName).emit('continueGame', gameData);
+    }
+  })
+
+  socket.on('returnToLogin', async () => {
+    console.log(`${socket.data.userName} returning to login`);
+    await leaveLobby(socket);
+  })
+
+  socket.on('returnToLobby', () => {
+    console.log(`${socket.data.userName} returning to ${socket.data.lobbyName}`);
+
+    const lobby = lobbyManager.getLobby(socket.data.lobbyName);
+
+    socket.emit('joinedGame', socket.data);
+    io.to(socket.data.lobbyName).emit('chat-message', `${socket.data.userName} rejoined the lobby.`)
+    io.to(socket.data.lobbyName).emit('checkLobbySize', lobby.lobbySize, lobby.minClients)
+  })
+
 
 })
 

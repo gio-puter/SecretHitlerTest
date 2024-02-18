@@ -258,7 +258,7 @@ export class Game {
             this.electedPresident = null;
         } else if (this.nextPresident != null) {
             this.currPresident = this.nextPresident;
-            while (!this.getPlayer(this.currPresident).isAlive()) {
+            while (!this.getPlayer(this.currPresident).isAlive) {
                 const presIndex = this.indexOfPlayer(this.currPresident);
                 const nextPresIndex = (presIndex + 1) % this.players.length;
                 this.currPresident = this.players[nextPresIndex].username;
@@ -277,7 +277,7 @@ export class Game {
     getNextActivePlayer(username) {
         for (let i = 1; i < this.players.length; i++) {
             const index = (i + this.indexOfPlayer(username)) % this.players.length;
-            if (this.players[index].isAlive()) {
+            if (this.players[index].isAlive) {
                 return this.players[index].username;
             }
         }
@@ -429,7 +429,7 @@ export class Game {
     investigatePlayer(username) {
         if (this.state != GameState.PRESIDENTIAL_POWER_INVESTIGATE) {
             console.log('cannot investigate a player when power not active')
-        } else if (!this.getPlayer(username).isAlive()) {
+        } else if (!this.getPlayer(username).isAlive) {
             console.log("cannot investigate dead player");
         } else if (this.getPlayer(username).hasBeenInvestigated()) {
             console.log("cannot investigate player twice");
@@ -453,7 +453,7 @@ export class Game {
 
         const playerToKill = this.getPlayer(username);
         this.target = username;
-        if (!playerToKill.isAlive()) {
+        if (!playerToKill.isAlive) {
             console.log("cannot execute the dead");
         }
 
@@ -469,7 +469,7 @@ export class Game {
     electNextPresident(username) {
         if (this.state != GameState.PRESIDENTIAL_POWER_ELECTION) {
             console.log("Cannot elect a player president when the power is not active.");
-        } else if (!this.getPlayer(username).isAlive()) {
+        } else if (!this.getPlayer(username).isAlive) {
             console.log("Cannot elect the dead.");
         }
 
