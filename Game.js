@@ -73,6 +73,10 @@ export class Game {
             voteMap : this.voteMap,
         };
 
+        if (gameData.state == GameState.PRESIDENTIAL_POWER_PEEK) {
+            gameData.policies = this.getPeek();
+        }
+
         return gameData;
     }
 
@@ -146,9 +150,12 @@ export class Game {
     }
 
     shuffleDiscardIntoDraw() {
+        console.log(!this.discard.isEmpty())
         while (!this.discard.isEmpty()) {
             this.draw.add(this.discard.remove())
         }
+        console.log(this.discard);
+        console.log(this.draw);
         this.draw.shuffle();
     }
 
@@ -378,6 +385,7 @@ export class Game {
         this.lastPolicy = policy;
 
         if (this.draw.getSize() < this.MIN_DRAW_DECK_SIZE) {
+            console.log(`${this.draw.getSize()} < ${this.MIN_DRAW_DECK_SIZE}`);
             this.shuffleDiscardIntoDraw();
         }
 
@@ -411,8 +419,10 @@ export class Game {
     getPeek() {
         if (this.state != GameState.PRESIDENTIAL_POWER_PEEK) {
             console.log("cannot peek when power not active");
-        } else if (this.draw.getSize() < 3) {
+            return [];
+        } else if (this.draw.deck.length < 3) {
             console.log("insufficient cards in draw deck");
+            return [];
         }
 
         const policies = [];
@@ -449,7 +459,7 @@ export class Game {
     executePlayer(username) {
         if (this.state != GameState.PRESIDENTIAL_POWER_EXECUTION) {
             console.log("Cannot execute a player when the power is not active.");
-        } 
+        }
 
         const playerToKill = this.getPlayer(username);
         this.target = username;
@@ -560,11 +570,11 @@ class Deck {
     }
 
     peek(index) {
-        return deck[index];
+        return this.deck[index];
     }
 
     isEmpty() {
-        return this.getSize == 0;
+        return this.getSize() == 0;
     }
 
     getSize() {
@@ -661,7 +671,7 @@ const GameState = {
     PRESIDENTIAL_POWER_PEEK : "PRESIDENTIAL_POWER_PEEK",        // President may peek at the next three cards in the deck
     PRESIDENTIAL_POWER_INVESTIGATE : "PRESIDENTIAL_POWER_INVESTIGATE", // President can investigate a party membership
     PRESIDENTIAL_POWER_EXECUTION : "PRESIDENTIAL_POWER_EXECUTION",   // President may choose a player to execute
-    PRESIDENTIAL_POWER_ELECTION : "PR=ESIDENTIAL_POWER_ELECTION",    // President chooses the next president, seat continues as normal after.
+    PRESIDENTIAL_POWER_ELECTION : "PRESIDENTIAL_POWER_ELECTION",    // President chooses the next president, seat continues as normal after.
     POST_LEGISLATIVE : "POST_LEGISLATIVE",               // Waiting for the President to end their turn.
     LIBERAL_VICTORY_POLICY : "LIBERAL_VICTORY_POLICY",         // Liberal Party won through enacting Liberal policies.
     LIBERAL_VICTORY_EXECUTION : "LIBERAL_VICTORY_EXECUTION",      // Liberal Party won through executing Hitler.

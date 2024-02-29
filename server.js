@@ -110,10 +110,17 @@ io.on('connect', (socket) => {
     const lobby = lobbyManager.getLobby(socket.data.lobbyName);
     lobby.game.registerVote(socket.data.userName, vote);
 
+    const isGameOver = lobby.game.hasGameFinished();
+
     const gameData = lobby.game.getGameData();
-    gameData.voteMap = JSON.stringify(Array.from(gameData.voteMap))
+    gameData.voteMap = JSON.stringify(Array.from(gameData.voteMap));
     console.log(gameData);
-    io.to(socket.data.lobbyName).emit('continueGame', gameData);
+
+    if (isGameOver) {
+      io.to(socket.data.lobbyName).emit('gameOver', gameData);
+    } else {
+      io.to(socket.data.lobbyName).emit('continueGame', gameData);
+    }
   })
 
   socket.on('presidentDiscard', (index) => {
@@ -142,6 +149,44 @@ io.on('connect', (socket) => {
     console.log(`${socket.data.userName} ending presidential term`);
     const lobby = lobbyManager.getLobby(socket.data.lobbyName);
     lobby.game.endPresidentialTerm();
+    lobby.game.checkIfGameOver();
+
+    const isGameOver = lobby.game.hasGameFinished();
+
+    const gameData = lobby.game.getGameData();
+    gameData.voteMap = JSON.stringify(Array.from(gameData.voteMap));
+    console.log(gameData);
+
+    if (isGameOver) {
+      io.to(socket.data.lobbyName).emit('gameOver', gameData);
+    } else {
+      io.to(socket.data.lobbyName).emit('continueGame', gameData);
+    }
+  })
+
+  socket.on('endPresidentialPowerPeek', () => {
+    console.log(`${socket.data.userName} ending presidential power peek`);
+    const lobby = lobbyManager.getLobby(socket.data.lobbyName);
+    lobby.game.endPeek();
+    lobby.game.checkIfGameOver();
+
+    const isGameOver = lobby.game.hasGameFinished();
+
+    const gameData = lobby.game.getGameData();
+    gameData.voteMap = JSON.stringify(Array.from(gameData.voteMap));
+    console.log(gameData);
+
+    if (isGameOver) {
+      io.to(socket.data.lobbyName).emit('gameOver', gameData);
+    } else {
+      io.to(socket.data.lobbyName).emit('continueGame', gameData);
+    }
+  })
+  
+  socket.on('endPresidentialPowerExecution', (username) => {
+    console.log(`${socket.data.userName} ending presidential power execution by killing ${username}`);
+    const lobby = lobbyManager.getLobby(socket.data.lobbyName);
+    lobby.game.executePlayer(username);
     lobby.game.checkIfGameOver();
 
     const isGameOver = lobby.game.hasGameFinished();

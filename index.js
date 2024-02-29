@@ -160,6 +160,12 @@ class App {
                         socket.emit("nominateChancellor", $(event.target).text());
                     }
                     break;
+                case "PRESIDENTIAL_POWER_EXECUTION":
+                    if (this.state.userName == this.gameState.currPresident) {
+                        console.log(`Killing: ${$(event.target).text()}`)
+                        socket.emit("endPresidentialPowerExecution", $(event.target).text());
+                    }
+                    break;
                 default:
             }
         }
@@ -301,6 +307,23 @@ class App {
                 }
 
                 endTurn.on('click', endTurnButton);
+            } else if (this.gameState.state == "PRESIDENTIAL_POWER_PEEK" && this.state.userName == this.gameState.currPresident) {
+                const policyOne = $('<button>').text(this.gameState.policies[0]);
+                const policyTwo = $('<button>').text(this.gameState.policies[1]);
+                const policyThree = $('<button>').text(this.gameState.policies[2]);
+
+                const endPresPowerButton = $('<button>').text(`End Presidential Power`);
+
+                choosePolicies.append(policyOne);
+                choosePolicies.append(policyTwo);
+                choosePolicies.append(policyThree);
+                choosePolicies.append($('<div>').append(endPresPowerButton));
+
+                const endPresPower = () => {
+                    socket.emit('endPresidentialPowerPeek', )
+                }
+
+                endPresPowerButton.on('click', endPresPower)
             }
         }
 
@@ -350,7 +373,7 @@ class App {
             switch (this.gameState.state) {
                 case "CHANCELLOR_NOMINATION":
                     if (this.state.userName == this.gameState.currPresident) {
-                        console.log("I am the president");
+                        // console.log("I am the president");
                         action.text(`Select your chancellor`);
                     } else {
                         action.text(``);
@@ -372,6 +395,24 @@ class App {
                     } else {
                         action.text(``);
                     }
+                    break;                
+                case "PRESIDENTIAL_POWER_PEEK":
+                    if (this.state.userName == this.gameState.currPresident) {
+                        action.text(`You are currently peeking at the top 3 cards of the deck. End your presidential power`);
+                    } else {
+                        action.text(``);
+                    }
+                    break;
+                case "PRESIDENTIAL_POWER_INVESTIGATE":
+                    break;
+                case "PRESIDENTIAL_POWER_EXECUTION":
+                    if (this.state.userName == this.gameState.currPresident) {
+                        action.text(`Select a player to kill`);
+                    } else {
+                        action.text(``);
+                    }
+                    break;
+                case "PRESIDENTIAL_POWER_ELECTION":
                     break;
                 case "POST_LEGISLATIVE":
                     if (this.state.userName == this.gameState.currPresident) {
@@ -380,6 +421,7 @@ class App {
                         action.text(``);
                     }
                     break;
+                
                 default:
             }
         })
